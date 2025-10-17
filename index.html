@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Knowledge Base - AI Search Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.15;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+            33% { transform: translateY(-100px) translateX(100px) rotate(120deg); }
+            66% { transform: translateY(-50px) translateX(-100px) rotate(240deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            color: white;
+            font-size: 3em;
+            font-weight: 700;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeInUp 1s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px rgba(0,0,0,0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .card-header h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* Document List */
+        .doc-list {
+            margin-top: 20px;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .doc-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .doc-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+
+        .delete-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        /* Search Box */
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 18px 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            font-size: 1.1em;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Answer Section */
+        .answer-section {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .answer-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .sources-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .source-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .source-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .relevance-badge {
+            background: rgba(255,255,255,0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #667eea;
+        }
+
+        .empty-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Particles -->
+    <div id="particles"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <h1>RAG Knowledge Base</h1>
+            </div>
+            <p class="subtitle">Upload documents and get AI-powered answers instantly</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size: 1.5em;">📁</span>
+                <h2>Document Library</h2>
+            </div>
+            
+            <input type="file" id="fileInput" multiple accept=".txt,.md" style="display: none;">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">☁️</div>
+                <div class="upload-text">Click to Upload Documents</div>
+                <div class="upload-subtext">Support for TXT and MD files</div>
+            </div>
+
+            <div class="doc-list" id="docList"></div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size: 1.5em;">🔍</span>
+                <h2>Ask a Question</h2>
+            </div>
+            
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput"
+                    placeholder="What would you like to know from your documents?"
+                >
+                <button class="search-btn" id="searchBtn">Search</button>
+            </div>
+
+            <div id="loadingDiv" class="hidden">
+                <div class="loader"></div>
+                <p style="text-align: center; color: #667eea; margin-top: 10px;">Analyzing documents...</p>
+            </div>
+        </div>
+
+        <!-- Answer Section -->
+        <div id="answerCard" class="hidden"></div>
+
+        <!-- Empty State -->
+        <div class="card" id="emptyState">
+            <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <h3 style="margin-bottom: 10px; font-size: 1.8em;">Get Started with Your Knowledge Base</h3>
+                <p style="margin-bottom: 30px; color: #666;">Upload documents to build your AI-powered search engine</p>
+                
+                <div class="feature-list">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h4 style="margin-bottom: 10px;">Semantic Search</h4>
+                        <p style="color: #666; font-size: 0.9em;">Find relevant information across all documents</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h4 style="margin-bottom: 10px;">AI Synthesis</h4>
+                        <p style="color: #666; font-size: 0.9em;">Get comprehensive answers from multiple sources</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h4 style="margin-bottom: 10px;">Source Attribution</h4>
+                        <p style="color: #666; font-size: 0.9em;">See where each answer comes from</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create animated particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 100 + 50 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.background = `rgba(255, 255, 255, ${Math.random() * 0.3})`;
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // State
+        let documents = [];
+
+        // Elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const docList = document.getElementById('docList');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const loadingDiv = document.getElementById('loadingDiv');
+        const answerCard = document.getElementById('answerCard');
+        const emptyState = document.getElementById('emptyState');
+
+        // Upload handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#764ba2';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#667eea';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#667eea';
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Handle file upload
+        async function handleFiles(files) {
+            for (let file of files) {
+                const text = await file.text();
+                const chunks = chunkText(text, 500);
+                
+                documents.push({
+                    name: file.name,
+                    chunks: chunks.map((chunk, idx) => ({
+                        text: chunk,
+                        embedding: generateEmbedding(chunk)
+                    })),
+                    uploadedAt: new Date()
+                });
+            }
+            
+            renderDocList();
+            emptyState.classList.add('hidden');
+        }
+
+        // Chunk text
+        function chunkText(text, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < text.length; i += chunkSize) {
+                chunks.push(text.substring(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        // Simple embedding simulation
+        function generateEmbedding(text) {
+            const words = text.toLowerCase().split(/\s+/);
+            return words.slice(0, 50).map(() => Math.random());
+        }
+
+        // Cosine similarity
+        function cosineSimilarity(vecA, vecB) {
+            const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+            const magA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+            const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+            return dotProduct / (magA * magB);
+        }
+
+        // Render document list
+        function renderDocList() {
+            docList.innerHTML = documents.map((doc, idx) => `
+                <div class="doc-item">
+                    <div class="doc-info">
+                        <span>📄</span>
+                        <strong>${doc.name}</strong>
+                        <span class="doc-badge">${doc.chunks.length} chunks</span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteDoc(${idx})">🗑️ Delete</button>
+                </div>
+            `).join('');
+        }
+
+        // Delete document
+        function deleteDoc(idx) {
+            documents.splice(idx, 1);
+            renderDocList();
+            answerCard.classList.add('hidden');
+            if (documents.length === 0) {
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        // Search functionality
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+            
+            if (documents.length === 0) {
+                alert('Please upload documents first');
+                return;
+            }
+
+            // Show loading
+            loadingDiv.classList.remove('hidden');
+            answerCard.classList.add('hidden');
+            searchBtn.disabled = true;
+
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Generate query embedding
+            const queryEmbedding = generateEmbedding(query);
+
+            // Get all chunks
+            const allChunks = [];
+            documents.forEach(doc => {
+                doc.chunks.forEach(chunk => {
+                    allChunks.push({
+                        ...chunk,
+                        fileName: doc.name
+                    });
+                });
+            });
+
+            // Calculate similarities
+            const scoredChunks = allChunks.map(chunk => ({
+                ...chunk,
+                score: cosineSimilarity(queryEmbedding, chunk.embedding)
+            }));
+
+            // Get top 5 chunks
+            const topChunks = scoredChunks
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5);
+
+            // Generate answer
+            const answer = generateAnswer(query, topChunks);
+
+            // Display results
+            displayAnswer(answer, topChunks);
+
+            // Hide loading
+            loadingDiv.classList.add('hidden');
+            searchBtn.disabled = false;
+        }
+
+        // Generate mock answer
+        function generateAnswer(query, chunks) {
+            return `Based on the analysis of ${chunks.length} relevant document sections, I found information related to "${query}".\n\nThe retrieved content spans multiple sources and provides comprehensive coverage of your query. This answer synthesizes information from the most relevant sections of your uploaded documents.\n\nIn a production environment, this would be generated by an advanced language model like GPT-4 or Claude, providing more accurate and contextual responses based on the retrieved information.`;
+        }
+
+        // Display answer
+        function displayAnswer(answer, sources) {
+            answerCard.innerHTML = `
+                <div class="answer-section">
+                    <h3 style="margin-bottom: 20px; font-size: 1.8em;">✨ Answer</h3>
+                    <div class="answer-text">${answer}</div>
+                    
+                    <div class="sources-section">
+                        <h4 style="margin-bottom: 15px; font-size: 1.3em;">📚 Sources</h4>
+                        ${sources.map((source, idx) => `
+                            <div class="source-item">
+                                <div class="source-header">
+                                    <strong>${source.fileName}</strong>
+                                    <span class="relevance-badge">${(source.score * 100).toFixed(1)}% match</span>
+                                </div>
+                                <p style="font-size: 0.9em; opacity: 0.9;">${source.text.substring(0, 150)}...</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            answerCard.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
